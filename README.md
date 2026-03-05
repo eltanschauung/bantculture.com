@@ -1,7 +1,7 @@
+**In Memory of Fredrick Brennan (1994-2026).**
+
 vichan - A lightweight and full featured PHP imageboard.
 ========================================================
-
-**Please do not contact Fredrick Brennan in regards to vichan issues.**
 
 As of 29 August 2022 it supports PHP8.1.
 
