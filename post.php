@@ -991,17 +991,81 @@ if (isset($_POST['delete'])) {
 		}
 	}
 
-	if ($config['user_flag'] && isset($_POST['user_flag']) && !empty($_POST['user_flag'])) {
-		$user_flag = $_POST['user_flag'];
+	if ($config['user_flag'] && isset($_POST['user_flag'])) {
+		$raw_flags = strtolower(trim($_POST['user_flag']));
 
-		if (!isset($config['user_flags'][$user_flag])) {
-			error(_('Invalid flag selection!'));
+		if ($raw_flags !== '') {
+			if ($config['multiple_flags']) {
+				if (strlen($raw_flags) > 300) {
+					error(_('Invalid flag selection!'));
+				}
+				$selected_flags = explode(',', str_replace(' ', '', $raw_flags));
+			}
+			else {
+				$selected_flags = array($raw_flags);
+			}
+
+			$normalized_flags = array();
+			$normalized_alts = array();
+			$country_code = null;
+			$country_name = null;
+
+			foreach ($selected_flags as $selected_flag) {
+				$selected_flag = trim($selected_flag);
+				if ($selected_flag === '')
+					continue;
+
+				if (!isset($config['user_flags'][$selected_flag])) {
+					error(_('Invalid flag selection!'));
+				}
+
+				if ($selected_flag === 'country') {
+					if ($country_code === null || $country_name === null) {
+						$country_code = 'us';
+						$country_name = 'United States';
+
+						if (function_exists('geoip_open') &&
+							function_exists('geoip_country_code_by_addr_v6') &&
+							function_exists('geoip_country_name_by_addr_v6')) {
+							$gi = @geoip_open('inc/lib/geoip/GeoIPv6.dat', GEOIP_STANDARD);
+							if ($gi) {
+								$lookup_ip = $_SERVER['REMOTE_ADDR'];
+								if (strpos($lookup_ip, ':') === false) {
+									$iparr = array_pad(explode('.', $lookup_ip), 4, 0);
+									$part7 = base_convert(($iparr[0] * 256) + $iparr[1], 10, 16);
+									$part8 = base_convert(($iparr[2] * 256) + $iparr[3], 10, 16);
+									$lookup_ip = '::ffff:' . $part7 . ':' . $part8;
+								}
+
+								$geo_code = geoip_country_code_by_addr_v6($gi, $lookup_ip);
+								$geo_name = geoip_country_name_by_addr_v6($gi, $lookup_ip);
+								if ($geo_code) {
+									$country_code = strtolower($geo_code);
+								}
+								if ($geo_name) {
+									$country_name = $geo_name;
+								}
+								if (function_exists('geoip_close')) {
+									@geoip_close($gi);
+								}
+							}
+						}
+					}
+
+					$normalized_flags[] = $country_code;
+					$normalized_alts[] = $country_name;
+					continue;
+				}
+
+				$normalized_flags[] = strtolower($selected_flag);
+				$normalized_alts[] = $config['user_flags'][$selected_flag];
+			}
+
+			if (!empty($normalized_flags)) {
+				$post['body'] .= "\n<tinyboard flag>" . implode(',', $normalized_flags) . "</tinyboard>" .
+					"\n<tinyboard flag alt>" . implode(',', $normalized_alts) . "</tinyboard>";
+			}
 		}
-
-		$flag_alt = isset($user_flag_alt) ? $user_flag_alt : $config['user_flags'][$user_flag];
-
-		$post['body'] .= "\n<tinyboard flag>" . strtolower($user_flag) . "</tinyboard>" .
-			"\n<tinyboard flag alt>" . $flag_alt . "</tinyboard>";
 	}
 
 	if ($config['allowed_tags'] && $post['op'] && isset($_POST['tag']) && isset($config['allowed_tags'][$_POST['tag']])) {

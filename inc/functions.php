@@ -229,12 +229,24 @@ function loadConfig() {
 			$config['url_javascript'] = $config['root'] . $config['file_script'];
 		if (!isset($config['additional_javascript_url']))
 			$config['additional_javascript_url'] = $config['root'];
-		if (!isset($config['uri_flags']))
-			$config['uri_flags'] = $config['root'] . 'static/flags/%s.png';
-		if (!isset($config['user_flag']))
-			$config['user_flag'] = false;
-		if (!isset($config['user_flags']))
-			$config['user_flags'] = array();
+			if (!isset($config['uri_flags']))
+				$config['uri_flags'] = $config['root'] . 'static/flags/%s.png';
+			if (!isset($config['user_flag']))
+				$config['user_flag'] = false;
+			if (!isset($config['multiple_flags']))
+				$config['multiple_flags'] = false;
+			if (!isset($config['default_user_flag']))
+				$config['default_user_flag'] = 'country';
+			if (!isset($config['user_flags']))
+				$config['user_flags'] = array();
+
+			$config['default_user_flag'] = strtolower(trim((string)$config['default_user_flag']));
+			if ($config['default_user_flag'] === '')
+				$config['default_user_flag'] = 'country';
+
+			// multiple_flags only applies when user_flag is enabled.
+			if (!$config['user_flag'])
+				$config['multiple_flags'] = false;
 
 		if (!isset($__version))
 			$__version = file_exists('.installed') ? trim(file_get_contents('.installed')) : false;

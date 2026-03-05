@@ -118,19 +118,23 @@
                 	</tr>
 			{% endif %}
 		{% endif %}
-		{% if config.user_flag %}
-			<tr>
-				<th>{% trans %}Flag{% endtrans %}</th>
-				<td>
-					<select name="user_flag" id="user_flag">
-						<option value="">{% trans %}None{% endtrans %}</option>
-						{% for flag, text in config.user_flags %}
-							<option value="{{ flag }}">{{ text }}</option>
-						{% endfor %}
-					</select>
-				</td>
-			</tr>
-		{% endif %}
+			{% if config.user_flag %}
+				<tr>
+					<th>{% trans %}Flag{% endtrans %}</th>
+					<td>
+						{% if config.multiple_flags %}
+							<input style="float:left;" name="user_flag" type="text" size="25" maxlength="300" autocomplete="off" id="user_flag" value="{{ config.default_user_flag|e('html_attr') }}">
+						{% else %}
+							<select name="user_flag" id="user_flag">
+								<option value="">{% trans %}None{% endtrans %}</option>
+								{% for flag, text in config.user_flags %}
+									<option value="{{ flag }}"{% if config.default_user_flag == flag %} selected{% endif %}>{{ text }}</option>
+								{% endfor %}
+							</select>
+						{% endif %}
+					</td>
+				</tr>
+			{% endif %}
 		{% if config.allowed_tags and not id %}
 			<tr>
 				<th>{% trans %}Tag{% endtrans %}</th>

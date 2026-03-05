@@ -644,6 +644,12 @@
 	// where they are enabled).
 	$config['user_flag'] = false;
 
+	// Allow entering multiple comma-separated flags in the post form. This only applies when user_flag is enabled.
+	$config['multiple_flags'] = false;
+
+	// Default user flag used by the post form and local user_flag persistence.
+	$config['default_user_flag'] = 'country';
+
 	// List of user_flag the user can choose. Flags must be placed in the directory set by $config['uri_flags']
 	$config['user_flags'] = array();
 	/* example: 
