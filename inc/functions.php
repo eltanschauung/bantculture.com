@@ -760,6 +760,89 @@ function displayBan($ban) {
 	));
 }
 
+function ipMatchesAccessList() {
+	global $config;
+
+	if (empty($config['ip_access_list']))
+		return false;
+
+	if (!isset($_SERVER['REMOTE_ADDR']))
+		return false;
+
+	$userIP = $_SERVER['REMOTE_ADDR'];
+	$filePath = !empty($config['ip_access_list_file']) ? $config['ip_access_list_file'] : 'access.conf';
+
+	if (!file_exists($filePath) || !is_readable($filePath))
+		return false;
+
+	$handle = fopen($filePath, 'r');
+	if (!$handle)
+		return false;
+
+	while (($line = fgets($handle)) !== false) {
+		$line = trim($line);
+		if ($line === '' || $line[0] === '#')
+			continue;
+
+		// CIDR range
+		if (strpos($line, '/') !== false) {
+			list($subnet, $mask) = explode('/', $line);
+			$mask = (int)$mask;
+
+			// Convert IP addresses to binary form
+			$userIPBinary = inet_pton($userIP);
+			$subnetBinary = inet_pton($subnet);
+
+			if ($userIPBinary === false || $subnetBinary === false)
+				continue;
+
+			// Check if both addresses are the same IP version
+			if (strlen($userIPBinary) !== strlen($subnetBinary))
+				continue;
+
+			$ipLength = strlen($userIPBinary);
+			$maxMask = $ipLength * 8;
+
+			if ($mask < 0 || $mask > $maxMask)
+				continue;
+
+			// Calculate the network mask
+			$binaryMask = str_repeat("\xff", floor($mask / 8));
+			if ($mask % 8 !== 0) {
+				$binaryMask .= chr(0xff << (8 - ($mask % 8)));
+			}
+			$binaryMask = str_pad($binaryMask, $ipLength, "\x00");
+
+			// Apply mask to both addresses and compare
+			$userIPNetwork = $userIPBinary & $binaryMask;
+			$subnetNetwork = $subnetBinary & $binaryMask;
+
+			if ($userIPNetwork === $subnetNetwork) {
+				fclose($handle);
+				return true;
+			}
+		} else {
+			// Exact match for single IP
+			if ($userIP === $line) {
+				fclose($handle);
+				return true;
+			}
+
+			// Also check if the line is a valid IP that matches when normalized
+			$lineIPBinary = inet_pton($line);
+			$userIPBinary = inet_pton($userIP);
+
+			if ($lineIPBinary !== false && $userIPBinary !== false && $lineIPBinary === $userIPBinary) {
+				fclose($handle);
+				return true;
+			}
+		}
+	}
+
+	fclose($handle);
+	return false;
+}
+
 function checkBan($board = false) {
 	global $config;
 

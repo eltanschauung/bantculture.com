@@ -330,6 +330,12 @@
 	// If poster's proxy supplies X-Forwarded-For header, save it for further inspection and/or filtering.
 	$config['proxy_save'] = false;
 
+	// Enable IP allowlist checks through ipMatchesAccessList().
+	$config['ip_access_list'] = false;
+
+	// Path to the IP allowlist file, relative to the vichan root by default.
+	$config['ip_access_list_file'] = 'access.conf';
+
 	/*
 	 * Custom filters detect certain posts and reject/ban accordingly. They are made up of a condition and an
 	 * action (for when ALL conditions are met). As every single post has to be put through each filter,
