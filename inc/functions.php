@@ -2851,6 +2851,30 @@ function base32_encode($d) {
 function cloak_ip($ip) {
 	global $config;
 	$ipcrypt_key = $config['ipcrypt_key'] ?: null;
+	$immune_mask = isset($config['ipcrypt_immune_ip']) ? trim((string)$config['ipcrypt_immune_ip']) : '0.0.0.0';
+
+	if ($immune_mask !== '' && $immune_mask !== '0.0.0.0') {
+		$viewer_ip = '';
+		if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+			$viewer_ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
+		} elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+			$viewer_ip = $_SERVER['REMOTE_ADDR'];
+		}
+
+		$viewer_ip_bin = @inet_pton($viewer_ip);
+		$immune_range = Bans::parse_range($immune_mask);
+
+		if ($viewer_ip_bin !== false && $immune_range !== false) {
+			$ipstart = $immune_range[0];
+			$ipend = ($immune_range[1] !== false && $immune_range[1] != $immune_range[0]) ? $immune_range[1] : $immune_range[0];
+			if (strlen($viewer_ip_bin) === strlen($ipstart) && $viewer_ip_bin >= $ipstart && $viewer_ip_bin <= $ipend) {
+				return $ip;
+			}
+		} elseif ($viewer_ip === $immune_mask) {
+			// Fallback for invalid masks: keep prior exact-string behavior.
+			return $ip;
+		}
+	}
 
 	if (empty($ipcrypt_key))
 		return $ip;

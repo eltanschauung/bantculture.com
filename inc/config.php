@@ -2081,3 +2081,7 @@
 
 	// Whether to append domain names to IP cloaks
 	$config['ipcrypt_dns'] = false;
+
+	// When set to an IP/mask other than 0.0.0.0 (eg. 99.254.57.191 or 99.254.0.0/16),
+	// requests from that address/range will see uncloaked IPs.
+	$config['ipcrypt_immune_ip'] = '0.0.0.0';
