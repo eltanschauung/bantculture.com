@@ -227,6 +227,37 @@ CREATE TABLE IF NOT EXISTS `reports` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `feedback`
+--
+
+CREATE TABLE IF NOT EXISTS `feedback` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `time` int(11) NOT NULL,
+  `ip` varchar(39) CHARACTER SET ascii NOT NULL,
+  `body` text NOT NULL,
+  `unread` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `feedback_comments`
+--
+
+CREATE TABLE IF NOT EXISTS `feedback_comments` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `feedback_id` int(11) unsigned NOT NULL,
+  `mod` int(11) DEFAULT NULL,
+  `time` int(11) NOT NULL,
+  `body` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `feedback_time` (`feedback_id`,`time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `robot`
 --
 
@@ -351,4 +382,3 @@ CREATE TABLE IF NOT EXISTS `captchas` (
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-

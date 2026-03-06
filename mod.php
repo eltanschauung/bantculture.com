@@ -59,6 +59,10 @@ $pages = [
 	'/rebuild'				=> 'secure_POST rebuild',	// rebuild static files
 	'/reports'				=> 'reports',			// report queue
 	'/reports/(\d+)/dismiss(&all|&post)?'		=> 'secure report_dismiss',	// dismiss a report
+	'/feedback'				=> 'feedback',			// feedback queue
+	'/feedback/(\d+)/comment'			=> 'secure_POST feedback_comment',	// add feedback comment
+	'/feedback/(\d+)/delete'			=> 'secure feedback_delete',	// delete feedback
+	'/feedback/(\d+)/mark_read'		=> 'secure feedback_mark_read',	// mark feedback as read
 
 	'/IP/([\w.:]+)'				=> 'secure_POST ip',		// view ip address
 	'/IP/([\w.:]+)/remove_note/(\d+)'	=> 'secure ip_remove_note',	// remove note from ip address

@@ -136,6 +136,8 @@ function mod_dashboard(Context $ctx) {
 
 	$query = query('SELECT COUNT(*) FROM ``reports``') or error(db_error($query));
 	$args['reports'] = $query->fetchColumn();
+	$query = query('SELECT COUNT(*) FROM ``feedback`` WHERE `unread` = 1') or error(db_error($query));
+	$args['feedback'] = $query->fetchColumn();
 
 	$query = query('SELECT COUNT(*) FROM ``ban_appeals``') or error(db_error($query));
 	$args['appeals'] = $query->fetchColumn();
@@ -2577,6 +2579,147 @@ function mod_report_dismiss(Context $ctx, $id, $action) {
 	$query->execute() or error(db_error($query));
 
 	header('Location: ?/reports', true, $config['redirect_http']);
+}
+
+function mod_feedback(Context $ctx) {
+	global $mod;
+	$config = $ctx->get('config');
+
+	if (!hasPermission($config['mod']['feedback']))
+		error($config['error']['noaccess']);
+
+	$limit = isset($config['mod']['recent_feedback']) ? (int)$config['mod']['recent_feedback'] : (int)$config['mod']['recent_reports'];
+	if ($limit < 1)
+		$limit = 10;
+
+	$query = prepare("SELECT * FROM ``feedback`` ORDER BY `unread` DESC, `time` DESC LIMIT :limit");
+	$query->bindValue(':limit', $limit, PDO::PARAM_INT);
+	$query->execute() or error(db_error($query));
+	$feedback_entries = $query->fetchAll(PDO::FETCH_ASSOC);
+
+	$feedback_comments = [];
+	if (!empty($feedback_entries)) {
+		$feedback_ids = [];
+		foreach ($feedback_entries as $feedback_entry) {
+			$feedback_ids[] = (int)$feedback_entry['id'];
+		}
+
+		$query = query(
+			"SELECT ``feedback_comments``.*, ``mods``.`username`
+			FROM ``feedback_comments``
+			LEFT JOIN ``mods`` ON ``mods``.`id` = ``feedback_comments``.`mod`
+			WHERE `feedback_id` = " . implode(' OR `feedback_id` = ', $feedback_ids) .
+			" ORDER BY `time` ASC"
+		) or error(db_error());
+
+		while ($comment = $query->fetch(PDO::FETCH_ASSOC)) {
+			if (!isset($feedback_comments[$comment['feedback_id']])) {
+				$feedback_comments[$comment['feedback_id']] = [];
+			}
+			$feedback_comments[$comment['feedback_id']][] = $comment;
+		}
+	}
+
+	$count = 0;
+	$body = '';
+	foreach ($feedback_entries as $feedback) {
+		$body .= Element($config['file_mod_feedback'], [
+			'feedback' => $feedback,
+			'comments' => isset($feedback_comments[$feedback['id']]) ? $feedback_comments[$feedback['id']] : [],
+			'config' => $config,
+			'mod' => $mod,
+			'token_delete' => make_secure_link_token('feedback/' . $feedback['id'] . '/delete'),
+			'token_mark_read' => make_secure_link_token('feedback/' . $feedback['id'] . '/mark_read'),
+			'token_comment' => make_secure_link_token('feedback/' . $feedback['id'] . '/comment')
+		]) . '<hr>';
+		$count++;
+	}
+
+	mod_page(
+		sprintf('%s (%d)', _('Feedback'), $count),
+		$config['file_mod_feedbacks'],
+		[
+			'feedbacks' => $body,
+			'count' => $count
+		],
+		$mod
+	);
+}
+
+function mod_feedback_delete(Context $ctx, $id) {
+	$config = $ctx->get('config');
+
+	if (!hasPermission($config['mod']['feedback_delete']))
+		error($config['error']['noaccess']);
+
+	$query = prepare("SELECT `id` FROM ``feedback`` WHERE `id` = :id");
+	$query->bindValue(':id', $id, PDO::PARAM_INT);
+	$query->execute() or error(db_error($query));
+	if (!$query->fetch(PDO::FETCH_ASSOC))
+		error($config['error']['404']);
+
+	$query = prepare("DELETE FROM ``feedback_comments`` WHERE `feedback_id` = :id");
+	$query->bindValue(':id', $id, PDO::PARAM_INT);
+	$query->execute() or error(db_error($query));
+
+	$query = prepare("DELETE FROM ``feedback`` WHERE `id` = :id");
+	$query->bindValue(':id', $id, PDO::PARAM_INT);
+	$query->execute() or error(db_error($query));
+
+	modLog("Deleted feedback entry (#{$id})");
+	header('Location: ?/feedback', true, $config['redirect_http']);
+}
+
+function mod_feedback_mark_read(Context $ctx, $id) {
+	$config = $ctx->get('config');
+
+	if (!hasPermission($config['mod']['feedback_mark_read']))
+		error($config['error']['noaccess']);
+
+	$query = prepare("SELECT `id`, `unread` FROM ``feedback`` WHERE `id` = :id");
+	$query->bindValue(':id', $id, PDO::PARAM_INT);
+	$query->execute() or error(db_error($query));
+	$feedback = $query->fetch(PDO::FETCH_ASSOC);
+	if (!$feedback)
+		error($config['error']['404']);
+
+	if ((int)$feedback['unread'] !== 0) {
+		$query = prepare("UPDATE ``feedback`` SET `unread` = 0 WHERE `id` = :id");
+		$query->bindValue(':id', $id, PDO::PARAM_INT);
+		$query->execute() or error(db_error($query));
+	}
+
+	modLog("Marked feedback entry as read (#{$id})");
+	header('Location: ?/feedback', true, $config['redirect_http']);
+}
+
+function mod_feedback_comment(Context $ctx, $id) {
+	global $mod;
+	$config = $ctx->get('config');
+
+	if (!hasPermission($config['mod']['feedback_comment']))
+		error($config['error']['noaccess']);
+
+	$query = prepare("SELECT `id` FROM ``feedback`` WHERE `id` = :id");
+	$query->bindValue(':id', $id, PDO::PARAM_INT);
+	$query->execute() or error(db_error($query));
+	if (!$query->fetch(PDO::FETCH_ASSOC))
+		error($config['error']['404']);
+
+	if (!isset($_POST['comment']) || trim($_POST['comment']) === '')
+		error(_('You must enter a comment.'));
+
+	$comment = trim((string)$_POST['comment']);
+
+	$query = prepare("INSERT INTO ``feedback_comments`` (`feedback_id`, `mod`, `time`, `body`) VALUES (:feedback_id, :mod, :time, :body)");
+	$query->bindValue(':feedback_id', $id, PDO::PARAM_INT);
+	$query->bindValue(':mod', $mod['id'], PDO::PARAM_INT);
+	$query->bindValue(':time', time(), PDO::PARAM_INT);
+	$query->bindValue(':body', $comment, PDO::PARAM_STR);
+	$query->execute() or error(db_error($query));
+
+	modLog("Left a comment on feedback entry (#{$id})");
+	header('Location: ?/feedback', true, $config['redirect_http']);
 }
 
 function mod_recent_posts(Context $ctx, $lim) {

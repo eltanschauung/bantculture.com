@@ -1,0 +1,56 @@
+<div class="report">
+	<hr>
+	{% trans 'Feedback' %}: {{ feedback.body|e }}
+	<br>
+	{% trans 'Submission date' %}: {{ feedback.time|date(config.post_date) }}
+	<br>
+	{% if mod|hasPermission(config.mod.show_ip) %}
+		{% trans 'Submitted by' %}: <a href="?/IP/{{ feedback.ip|cloak_ip }}">{{ feedback.ip|cloak_ip }}</a>
+		<br>
+	{% endif %}
+	{% trans 'Status' %}: {% if feedback.unread %}Unread{% else %}Read{% endif %}
+
+	{% if comments %}
+		<hr>
+		{% for comment in comments %}
+			<div class="report" style="margin:6px 0 6px 14px;">
+				{% trans 'Note by' %}: {{ comment.username ? comment.username|e : 'unknown' }}
+				<br>
+				{% trans 'Note date' %}: {{ comment.time|date(config.post_date) }}
+				<br>
+				{% trans 'Note' %}: {{ comment.body|e }}
+			</div>
+		{% endfor %}
+	{% endif %}
+
+	<hr>
+	{% if mod|hasPermission(config.mod.feedback_delete) %}
+		<a title="Delete feedback entry" href="?/feedback/{{ feedback.id }}/delete/{{ token_delete }}">Delete</a>
+	{% endif %}
+	{% if mod|hasPermission(config.mod.feedback_mark_read) %}
+		{% if mod|hasPermission(config.mod.feedback_delete) %}
+			 |&nbsp;
+		{% endif %}
+		{% if feedback.unread %}
+			<a title="Mark feedback as read" href="?/feedback/{{ feedback.id }}/mark_read/{{ token_mark_read }}">Mark as Read</a>
+		{% else %}
+			Mark as Read
+		{% endif %}
+	{% endif %}
+	{% if mod|hasPermission(config.mod.feedback_comment) %}
+		{% if mod|hasPermission(config.mod.feedback_delete) or mod|hasPermission(config.mod.feedback_mark_read) %}
+			 |&nbsp;
+		{% endif %}
+		<a href="#note-{{ feedback.id }}">Add Note</a>
+	{% endif %}
+
+	{% if mod|hasPermission(config.mod.feedback_comment) %}
+		<hr>
+		<form id="note-{{ feedback.id }}" action="?/feedback/{{ feedback.id }}/comment" method="post">
+			<input type="hidden" name="token" value="{{ token_comment }}">
+			<textarea name="comment" rows="2" cols="60" placeholder="Add internal note"></textarea>
+			<br>
+			<input type="submit" value="Add note">
+		</form>
+	{% endif %}
+</div>

@@ -336,6 +336,9 @@
 	// Path to the IP allowlist file, relative to the vichan root by default.
 	$config['ip_access_list_file'] = 'access.conf';
 
+	// Store submitter network ranges for feedback entries. If false, feedback submissions are stored as 0.0.0.0.
+	$config['feedback_store_ip'] = false;
+
 	/*
 	 * Custom filters detect certain posts and reject/ban accordingly. They are made up of a condition and an
 	 * action (for when ALL conditions are met). As every single post has to be put through each filter,
@@ -1386,6 +1389,8 @@
 	$config['file_mod_rebuild'] = 'mod/rebuild.html';
 	$config['file_mod_report'] = 'mod/report.html';
 	$config['file_mod_reports'] = 'mod/reports.html';
+	$config['file_mod_feedback'] = 'mod/feedback.html';
+	$config['file_mod_feedbacks'] = 'mod/feedbacks.html';
 	$config['file_mod_recent_posts'] = 'mod/recent_posts.html';
 
 	$config['file_mod_config_editor'] = 'mod/config-editor.html';
@@ -1545,6 +1550,8 @@
 		'ip_recentposts' => 5,
 		// Number of posts to display on the reports page.
 		'recent_reports' => 10,
+		// Number of entries to display on the feedback page.
+		'recent_feedback' => 10,
 		// Number of actions to show per page in the moderation log.
 		'modlog_page' => 350,
 		// Number of bans to show per page in the ban list.
@@ -1727,6 +1734,17 @@
 	$config['mod']['reports'] = JANITOR;
 	// Dismiss an abuse report
 	$config['mod']['report_dismiss'] = JANITOR;
+	// View feedback queue
+	$config['mod']['feedback'] = JANITOR;
+	// Delete a feedback entry
+	$config['mod']['feedback_delete'] = JANITOR;
+	// Mark a feedback entry as read
+	$config['mod']['feedback_mark_read'] = JANITOR;
+	// Leave a moderator comment on feedback
+	$config['mod']['feedback_comment'] = JANITOR;
+	// Legacy aliases
+	$config['mod']['feedback_dismiss'] = &$config['mod']['feedback_delete'];
+	$config['mod']['feedback_dismiss_ip'] = &$config['mod']['feedback_delete'];
 	// Dismiss all abuse reports by an IP
 	$config['mod']['report_dismiss_ip'] = JANITOR;
 	// Dismiss all abuse reports for a post

@@ -87,6 +87,13 @@
 				{% if reports > 0 %}</strong>{% endif %}
 			</li>
 		{% endif %}
+		{% if mod|hasPermission(config.mod.feedback) %}
+			<li>
+				{% if feedback > 0 %}<strong>{% endif %}
+					<a href="?/feedback">{% trans 'Feedback' %} ({{ feedback }})</a>
+				{% if feedback > 0 %}</strong>{% endif %}
+			</li>
+		{% endif %}
 		{% if mod|hasPermission(config.mod.view_banlist) %}
 			<li><a href="?/bans">{% trans 'Ban list' %}</a></li>
 		{% endif %}
