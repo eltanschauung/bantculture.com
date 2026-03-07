@@ -2879,6 +2879,9 @@ function cloak_ip($ip) {
 	if (empty($ipcrypt_key))
 		return $ip;
 
+	if (filter_var($ip, FILTER_VALIDATE_IP) !== false)
+		return $ip;
+
 	$ip_dec = inet_pton($ip);
 
 	if ($config['ipcrypt_dns']) {
@@ -2922,6 +2925,9 @@ function uncloak_ip($ip) {
 	$ipcrypt_key = ($config['ipcrypt_key']);
 
 	if (empty($ipcrypt_key))
+		return $ip;
+
+	if (filter_var($ip, FILTER_VALIDATE_IP) !== false)
 		return $ip;
 
 	$juice = substr($ip, strlen($config['ipcrypt_prefix']) + 1);
